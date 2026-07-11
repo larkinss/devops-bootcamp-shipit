@@ -1,14 +1,55 @@
-# board — Mission Control
+# shipit-board — Mission Control
 
-The projector showpiece. A small Node WebSocket hub that receives pipeline events from every
-learner's workflow and broadcasts a live roster to a **Three.js spectator view** — launch pads,
-countdowns, liftoffs, and a shared orbit of shipped ships.
+The shared CI/CD orbit for the Ship It bootcamp prop: a Node process that ingests
+pipeline events over HTTP and streams a live roster to a Three.js spectator over
+WebSocket. Dual-role — the instructor runs the shared instance; each learner builds
+and deploys their own copy to their EC2 in the S4 capstone.
 
-**Match the visual bar of `devops-bootcamp-app`:** Three.js, animated, blueprint aesthetic,
-self-contained (no CDN), WebGL + `prefers-reduced-motion` fallbacks, projector-legible.
+## Run (local)
 
-- Event ingest + auth: see the **pinned contract** in the repo-root `CLAUDE.md`.
-- Pattern to clone: `devops-bootcamp-game`'s `server/` (ws roster hub + `public/` spectator).
-- Image: `ghcr.io/infratify/shipit-board`, port `3000`.
+```bash
+npm install
+npm run dev        # builds the client, then serves it + the ws hub on :3000
+# open http://localhost:3000
+```
 
-Starter `package.json` is a stub — finalize deps/scripts during the build.
+`npm run dev` runs in **open mode** (no `SHIPIT_TOKEN`) and prints a warning — any
+POST is accepted, so you can drive it with curl:
+
+```bash
+curl -XPOST localhost:3000/api/event -H 'content-type: application/json' \
+  -d '{"callsign":"octocat","stage":"liftoff","status":"shipped","color":"#22d3ee","siteUrl":"https://example.com"}'
+```
+
+## Auth
+
+Set `SHIPIT_TOKEN` to enforce Bearer auth on `POST /api/event`:
+
+```bash
+SHIPIT_TOKEN=sooper-secret npm start
+curl -XPOST localhost:3000/api/event -H 'authorization: Bearer sooper-secret' \
+  -H 'content-type: application/json' -d '{"callsign":"octocat","stage":"pad","status":"running","color":"#22d3ee"}'
+```
+
+## Event contract
+
+`POST /api/event` — `{ callsign, stage, status, color, version?, siteUrl? }`
+· `stage ∈ {pad,build,test,clearance,liftoff}` · `status ∈ {running,passed,failed,aborted,shipped}`.
+
+## Test
+
+```bash
+npm test           # node --test: room, server (the loop), placement, fallback
+```
+
+## Docker
+
+```bash
+docker build -t shipit-board .
+docker run -p 3000:3000 -e SHIPIT_TOKEN=sooper-secret shipit-board
+```
+
+## Env
+
+- `PORT` (default `3000`)
+- `SHIPIT_TOKEN` (unset ⇒ open/dev mode)
