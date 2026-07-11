@@ -36,6 +36,11 @@ test('sanitizeEvent carries optional version, capped', () => {
   assert.equal('version' in sanitizeEvent(base), false);
 });
 
+test('sanitizeEvent returns null (not throw) for null/undefined', () => {
+  assert.equal(sanitizeEvent(null), null);
+  assert.equal(sanitizeEvent(undefined), null);
+});
+
 test('Roster upserts latest-wins by callsign', () => {
   const r = new Roster();
   r.upsert(sanitizeEvent({ ...base, stage: 'pad', status: 'running' }));
