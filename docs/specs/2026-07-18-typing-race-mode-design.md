@@ -90,6 +90,15 @@ on the roster** — i.e. their pipeline actually ran and reported. Not on roster
 run your pipeline first." A green pipeline is the literal entry ticket. Reuses existing state; adds
 none.
 
+**Callsign canonicalization (implementation note):** the board **lowercases the callsign at ingest**
+(`sanitizeEvent`). GitHub usernames are case-insensitive and GitHub Pages hostnames are always
+lowercase, so the cockpit (hostname-derived) can only ever produce a lowercase callsign — the roster
+must key on the same form or a mixed-case user (`JohnDoe`) is permanently denied. Consequence: the
+shared board now **displays callsigns lowercase** (`@johndoe`), including in the existing S3 orbit
+view. Not a pin violation — no contract pins display case, and the event-contract example already
+uses lowercase — but note it in CLAUDE.md / the slides so the S3 "first contact" label change is
+expected.
+
 ### Launchpad changes (stays static)
 
 - `src/main.js`: replace `const callsign = import.meta.env.VITE_CALLSIGN || ''` with a
@@ -97,6 +106,12 @@ none.
 - Add a READY button to the overlay: `href = "${VITE_BOARD_URL}/play?callsign=${callsign}"`.
   - `VITE_BOARD_URL` is a **public** build var (the board's address is a variable, never a secret).
     If unset, the button is hidden (pre-S3 / local dev) — the site degrades to today's behaviour.
+  - **Build-time wiring (load-bearing — tracked in slides issue #161):** `VITE_BOARD_URL` is read
+    by Vite at **build** time (`import.meta.env`), so the taught workflow's **build** step must set
+    it: `env: { VITE_BOARD_URL: ${{ vars.BOARD_URL }} }` on the `npm run build` step. The pinned
+    S3 report step exposes `BOARD_URL` only at *report* time (runtime), which the build never sees —
+    so without this the button stays hidden and the race is unreachable in the real learner
+    deployment. Reuses the existing `BOARD_URL` repo variable; adds no new secret.
   - The button is inert until the board is in race mode; the cockpit handles the "waiting for
     race" state, so the button can safely exist from the first fork.
 - No other launchpad change. It remains the solo "file" half of the contrast.
@@ -217,7 +232,12 @@ in a separate session.
 - "Workflow never sets `VITE_CALLSIGN`": **preserved** (hostname-parse instead).
 - S4 concept (image → GHCR → EC2): **preserved and reinforced.**
 - New public build var `VITE_BOARD_URL` for the launchpad (the board address is a variable, not a
-  secret). Optional; button hides when unset.
+  secret). **Must be set on the taught workflow's `npm run build` step** (`env: VITE_BOARD_URL:
+  ${{ vars.BOARD_URL }}`) or the READY button hides and the race is unreachable — build-time var, not
+  the S3 report step's runtime `BOARD_URL`. Slides/workflow wiring tracked in issue #161.
+- Board **lowercases the callsign at ingest** (canonical, case-insensitive usernames / lowercase
+  Pages hostnames) — shared-board display becomes lowercase; document in CLAUDE.md / slides. Not a
+  pin violation (no contract pins display case).
 - Board accepts inbound cockpit WebSocket messages (new); production still rejects unauthenticated
   *events* on `/api/event` (unchanged) — the cockpit WS is a separate, deliberately unauthenticated
   channel.
