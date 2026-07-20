@@ -8,7 +8,7 @@ const prompts = (n) => Array.from({ length: n }, (_, i) => `cmd${i + 1}`);
 test('join is idempotent and starts at the line', () => {
   const r = new Race({ total: 3 });
   const a = r.join('octocat');
-  assert.deepEqual(a, { completed: 0, finishedAt: null });
+  assert.deepEqual(a, { completed: 0, finishedAt: null, frac: 0 });
   r.join('octocat');
   assert.equal(r.snapshot().ships.length, 1);
 });
@@ -69,4 +69,54 @@ test('total stays the configured cap across rounds of differing length', () => {
   r.start(prompts(5)); // more than the cap
   assert.equal(r.total, 3);
   assert.equal(r.prompts.length, 3);  // clamped to the cap
+});
+
+test('report stores clamped frac without advancing', () => {
+  const r = new Race({ total: 3 });
+  r.join('octocat');
+  r.start(prompts(3));
+  r.report('octocat', 0, 0.5);
+  let s = r.snapshot().ships[0];
+  assert.equal(s.completed, 0);
+  assert.equal(s.frac, 0.5);
+  r.report('octocat', 0, 7);      // over → clamp 1
+  assert.equal(r.snapshot().ships[0].frac, 1);
+  r.report('octocat', 0, -2);     // under → clamp 0
+  assert.equal(r.snapshot().ships[0].frac, 0);
+  r.report('octocat', 0, 'zzz');  // junk → 0
+  assert.equal(r.snapshot().ships[0].frac, 0);
+});
+
+test('report advances on next index and zeroes frac; gaps ignored', () => {
+  const r = new Race({ total: 3 });
+  r.join('octocat');
+  r.start(prompts(3));
+  r.report('octocat', 0, 0.9);
+  r.report('octocat', 1, 0);      // completion
+  let s = r.snapshot().ships[0];
+  assert.equal(s.completed, 1);
+  assert.equal(s.frac, 0);
+  r.report('octocat', 3, 0.5);    // gap → fully ignored
+  s = r.snapshot().ships[0];
+  assert.equal(s.completed, 1);
+  assert.equal(s.frac, 0);
+});
+
+test('report is ignored when idle or racer unknown', () => {
+  const r = new Race({ total: 3 });
+  assert.equal(r.report('nobody', 0, 0.5), null);   // idle
+  r.join('octocat');
+  r.start(prompts(3));
+  assert.equal(r.report('ghost', 0, 0.5), null);    // not joined
+});
+
+test('start and reset zero frac', () => {
+  const r = new Race({ total: 3 });
+  r.join('octocat');
+  r.start(prompts(3));
+  r.report('octocat', 0, 0.7);
+  r.reset();
+  assert.equal(r.snapshot().ships[0].frac, 0);
+  r.start(prompts(3));
+  assert.equal(r.snapshot().ships[0].frac, 0);
 });
