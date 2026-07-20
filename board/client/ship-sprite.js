@@ -6,8 +6,7 @@
 import * as THREE from 'three';
 import { createShip, preloadShipTemplates, disposeShip, disposeObject3D } from './ship-mesh.js';
 
-const SIZE = 128; // ~3x the largest on-screen box so hiDPI stays crisp
-const NOSE_POS_Z = new Set(['scout', 'hauler']); // models whose nose points +z instead of -z (scout: engine nozzles confirm; hauler: cockpit-forward reading)
+const SIZE = 128; // ~2.5x the largest on-screen box so hiDPI stays crisp
 const cache = new Map(); // `${shipModel}|${color}` -> Promise<string|null>
 let ctx; // lazy { renderer, scene, camera }; null = WebGL unavailable
 let templatesPromise; // cache the promise; all sprite renders share one load
@@ -47,9 +46,9 @@ async function render(shipModel, color) {
   }
   // Yaw the nose toward +x (the track direction), leaning slightly toward the
   // viewer so the sprite isn't a flat side sliver; the camera above adds the
-  // top-down component — the ship itself stays level. The GLBs disagree on
-  // which axis the nose points down (verified by eye per model), hence the set.
-  ship.rotation.y = NOSE_POS_Z.has(shipModel) ? Math.PI / 2 - 0.4 : -(Math.PI / 2) - 0.4;
+  // top-down component — the ship itself stays level. All four GLBs point
+  // their nose down +z (confirmed on-screen against the track).
+  ship.rotation.y = Math.PI / 2 - 0.4;
   ctx.scene.add(ship);
   ship.updateMatrixWorld(true);
   // Frame the hull in CAMERA space (the camera is tilted, so a world-space

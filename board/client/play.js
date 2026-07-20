@@ -21,7 +21,11 @@ function render() {
   if (phase === 'running' && completed < prompts.length) {
     const { matched } = typedState(target, entry.value);
     promptEl.dataset.matched = String(matched);
+    const wasDisabled = entry.disabled;
     entry.disabled = false;
+    // `autofocus` dies while the input is disabled pre-race — without this,
+    // race start leaves focus nowhere and keystrokes go to the page.
+    if (wasDisabled) entry.focus();
   } else {
     entry.disabled = true;
   }
@@ -86,6 +90,9 @@ function connect() {
   ws.onclose = () => { statusEl.textContent = 'disconnected — reconnecting…'; setTimeout(connect, 1000); };
   ws.onerror = () => ws.close();
 }
+
+// Click/tap anywhere returns focus to the input — racers never hunt for it.
+document.addEventListener('click', () => { if (!entry.disabled) entry.focus(); });
 
 if (!callsign) { statusEl.textContent = 'No callsign — open this from your ship\'s READY button.'; entry.disabled = true; }
 else connect();

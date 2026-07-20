@@ -2,7 +2,7 @@
    Dark-only, same palette family as style.css / play.css. Rows flex-share the
    viewport height so 40+ racers fit with zero scrolling. */
 .race-track {
-  --ship-w: 38px;
+  --ship-w: 50px;
   --accent: #22d3ee;
   --lane-bg: #1e293b;
   --fg: #e2e8f0;
@@ -46,6 +46,6 @@
 
 /* 25+ racers: reclaim label space, shrink sprites, keep every row legible */
 .race-rows[data-dense='1'] .cs { display: none; }
-.race-rows[data-dense='1'] { --ship-w: 24px; }
+.race-rows[data-dense='1'] { --ship-w: 31px; }
 .race-rows[data-dense='1'] .race-row { gap: 0.3rem; }
 .race-rows[data-dense='1'] .meta { font-size: 0.8em; width: 6ch; }
