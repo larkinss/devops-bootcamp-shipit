@@ -123,8 +123,13 @@ Cockpit → server (WS), extending the existing message — no new type:
 
 ## Cockpit (`play.html` / `play.js`)
 
-- Layout: `race-track` container fills the screen; typing dock (status line, prompt, input)
-  pinned at bottom. The single-bar `#track`/`#me` mockup DOM is removed.
+- Layout: `race-track` container fills the screen; typing dock pinned at bottom. The dock is a
+  styled **terminal window** (title bar + `$ ` prompt line): the current command sits greyed out
+  on the line and **lights up character by character** as the racer types it in place — there is
+  no visible input field (a hidden input catches keystrokes and summons mobile keyboards).
+  Typing is **strict**: a wrong key never lands (caret flashes red, thud sfx), so backspace is
+  unnecessary and disabled — only correct keys advance the cursor. `typing.js` exports the pure
+  `advance(target, at, incoming)` cursor walk (replaces `typedState`).
 - `play.js` keeps: callsign-from-query, roster-denied message, reconnect loop, optimistic
   `completed` with server re-sync on reconnect/new-round (existing logic verbatim). Adds:
   `createRaceTrack(container, { me: callsign })`, `track.update(m)` on every race message, and
